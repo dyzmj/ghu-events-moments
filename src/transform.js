@@ -254,6 +254,7 @@ function transformWrappeEventToMoment(wrappedEvents) {
         content: { raw: `${item.raw}`, html: `${item.content}`, medium: [] },
         tags: ["github-events"],
         releaseTime: new Date(item.created_at).toISOString(),
+        visible: "PUBLIC",
       },
       metadata: {
         generateName: "moment-",
@@ -264,6 +265,7 @@ function transformWrappeEventToMoment(wrappedEvents) {
           "guqing.github.io/event-id": `${item.id}`,
           "guqing.github.io/customize-title": `${item.title}`,
         },
+        creationTimestamp: new Date(item.created_at).toISOString(),
       },
       kind: "Moment",
       apiVersion: "moment.halo.run/v1alpha1",
