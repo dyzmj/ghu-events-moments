@@ -9,6 +9,6 @@ compatibility_date = "2024-08-13"
 crons = ["*/30 * * * *"] # run every 10 minute
 
 [vars]
-GITHUB_USERNAME = "guqing"
-HALO_URL = "https://guqing.io"
-HALO_USERNAME = "guqing"
+GITHUB_USERNAME = "dyzmj"
+HALO_URL = "https://dyzmj.top"
+HALO_USERNAME = "dyzmj"
