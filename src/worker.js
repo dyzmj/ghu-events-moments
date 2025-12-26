@@ -27,7 +27,8 @@ const axiosClient = axios.create({
 class GithubEventHandler {
 	constructor(env) {
 		this.githubUsername = env.GITHUB_USERNAME;
-		this.halo_pat = env.HALO_TOKEN;
+		this.haloUsername = env.HALO_USERNAME;
+		this.haloPassword = env.HALO_PASSWORD;
 		this.haloUrl = env.HALO_URL;
 		this.githubToken = env.GITHUB_TOKEN;
 		this.eventsStateConfigMapName = 'configmap-github-user-events-state';
@@ -75,25 +76,31 @@ class GithubEventHandler {
 			for (const moment of moments) {
 				// Using Octokit to render a markdown and update it
 				await this.renderAndUpdateMarkdownUsingOctokit(moment);
+				moment.spec.content.html = `<p>${moment.metadata.annotations['guqing.github.io/customize-title']}</p> <br/> ${moment.spec.content.html}`;
 
-				const createdMoment = await axiosClient.post(
-					`${this.haloUrl}/apis/console.api.moment.halo.run/v1alpha1/moments`,
+				const createMoment = axiosClient.post(
+					`${this.haloUrl}/apis/api.plugin.halo.run/v1alpha1/plugins/PluginMoments/moments`,
 					moment,
 					{
 						...this.haloRequestOptions(),
 					}
 				);
 
-				await this.updateEventStateConfigMap(
+				const updateLastProcessedTime = this.updateEventStateConfigMap(
 					moment.spec.releaseTime
 				);
+				const values = await Promise.all([
+					createMoment,
+					updateLastProcessedTime,
+				]);
+				const createdMoment = values[0].data;
 				console.log(
 					'created a moment by github user public event:',
-					createdMoment.data
+					createdMoment
 				);
 			}
 		} catch (error) {
-			console.error('Failed to sync data to halo moment:', error);
+			console.error('Failed to sync data:', error);
 		}
 	}
 
@@ -104,7 +111,7 @@ class GithubEventHandler {
 		}
 		const markdownResp = await this.octokit.request('POST /markdown', {
 			text: raw,
-			mode: "gfm",
+			mode: 'gfm',
 			headers: {
 				'X-GitHub-Api-Version': '2022-11-28',
 			},
@@ -124,7 +131,7 @@ class GithubEventHandler {
 					'X-GitHub-Api-Version': '2022-11-28',
 					Authorization: `Bearer ${this.githubToken}`,
 					Accept: 'application/vnd.github+json',
-					'User-Agent': this.githubUsername +'-CF-Worker',
+					'User-Agent': 'GuQing-CF-Worker',
 				},
 			});
 			const data = response.data;
@@ -167,7 +174,7 @@ class GithubEventHandler {
 			);
 			return response.data;
 		} catch (error) {
-			console.log('Fetch configmap error:', error);
+			console.log(error);
 			if (error.response && error.response.status === 404) {
 				return null;
 			}
@@ -208,7 +215,9 @@ class GithubEventHandler {
 			timeout: 10000,
 			headers: {
 				'Content-Type': 'application/json',
-				Authorization: `Bearer ${this.halo_pat}`,
+				Authorization: `Basic ${btoa(
+					this.haloUsername + ':' + this.haloPassword
+				)}`,
 			},
 		};
 	}
